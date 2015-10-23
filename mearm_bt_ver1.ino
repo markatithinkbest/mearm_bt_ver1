@@ -3,13 +3,13 @@
  * Mark Chen in Caotun, Taiwan
  *
  */
-
+#include <SoftwareSerial.h>
 #include <Servo.h>
 
 // === 調試使用 (由於伺服馬達的起始位置不完全相同,可供不同 MeArm 使用)===
 
 int STD_DELAY=12; //連續動作時,每一度的delay, 4很快,12很有機器人的慢節奏
-int LOOP_DELAY=5; //
+int LOOP_DELAY=10; //
 int MOVE_DELAY=50; //一個小動作後的delay
 int LOOP_STEP=1;
 
@@ -20,22 +20,34 @@ int mode=0;
 
 
 int D90=90;
-// 手指
-int m1Min=60; //縮
-int m1Max=100; //張
 
-// 前後
+// for fixed combo
+int m1Min=60; //閉
+int m1Max=100; //開
 int m2Min=75; // 後
 int m2Max=125; // 前
-
-// 上下
 int m3Min=45;  // 下
 int m3Max=100; // 上
+int m4Min=30; // m4右 順時針
+int m4Max=150; // m4左 逆時針
 
-int m4Min=30; // 順時針
-int m4Max=150; // 逆時針
+
+// for manual 
+//int m1Min=60; //閉
+//int m1Max=100; //開
+//int m2Min=30; // 後
+//int m2Max=150; // 前
+//int m3Min=30;  // 下
+//int m3Max=150; // 上
+//int m4Min=30; // m4右 順時針
+//int m4Max=150; // m4左 逆時針
+
+
 
 // === 程式底層定義 (共同,不要隨意更動)===
+String str;
+SoftwareSerial BT(12, 13);
+
 // 4個伺服馬達
 Servo servo1;
 Servo servo2;
@@ -150,6 +162,7 @@ void servoAct(Servo servo,int m, int n){
 
 
 void takeObjLite(){
+   servoRun(1,m1Max);//
   servoRun(3,m3Min);//手臂向下  
   servoRun(2,m2Max);//手臂向前
   delay(500); 
@@ -207,6 +220,21 @@ void testMax(){
   delay(1000);
 } 
 
+
+void takeObjAt(int pos){
+  servoRun(4,pos);  
+  takeObjLite();  
+  
+}
+void putObjAt(int pos){
+  servoRun(4,pos);  
+  putObjLite();  
+  
+}
+
+
+
+
 void moveObjFromAtoB(int fromPos, int toPos){
   servoRun(4,fromPos);  
   takeObjLite();  
@@ -244,12 +272,14 @@ void setup() {
 //  combo2Lite();
 //  delay(1000);
   initPos();
-  Serial.begin(57600);
+  Serial.begin(9600);
+  Serial.println("=== setup === done");
+  BT.begin(9600);
   Serial.println("=== setup === done");
 }
 
 
-void show(){
+void debugModePosition(){
   Serial.print("mode=");
   Serial.print(mode);
   Serial.print(" ");
@@ -265,9 +295,163 @@ void show(){
   
 }
 
+
+
+
 int m1New=0;
+
+void setMode(){
+   if (str.length()>=5){
+    String cmd=str.substring(0,4);
+    String strDegree=str.substring(4);
+    
+    int degree=strDegree.toInt();
+    Serial.print("cmd is =>");
+    Serial.print(cmd);
+    Serial.print(" str degree is =>");
+    Serial.println(strDegree);
+    Serial.print(" int degree is =>");
+    Serial.println(degree);
+ 
+    
+    
+    if (cmd=="TAKE"){
+      takeObjAt(degree);
+    }
+    if (cmd=="PUT_"){
+      putObjAt(degree);
+    }
+
+    if (cmd=="MOVE"){
+    int a=str.substring(4,7).toInt();
+    int b=str.substring(7).toInt();
+     Serial.print(" a =>");
+    Serial.println(a);
+ Serial.print(" b =>");
+    Serial.println(b);
+ 
+      
+      moveObjFromAtoB(a,b);
+    }
+    
+  }
+  
+  if (str=="0"){
+      mode=0;
+    }
+
+    if (str=="101"){
+      mode=101;
+    }
+    if (str=="102"){
+      mode=102;
+    }
+
+    if (str=="201"){
+      mode=201;
+    }
+    if (str=="202"){
+      mode=202;
+    }
+    if (str=="301"){
+      mode=301;
+    }
+    if (str=="302"){
+      mode=302;
+    }
+    if (str=="401"){
+      mode=401;
+    }
+    if (str=="402"){
+      mode=402;
+    }
+    if (str=="999"){
+      mode=999;
+    }
+
+  
+
+  
+}
+
+void setModeBT(){
+
+  
+    if (str=="0"){
+      mode=0;
+    }
+
+    if (str=="101"){
+      mode=101;
+    }
+    if (str=="102"){
+      mode=102;
+    }
+
+    if (str=="201"){
+      mode=201;
+    }
+    if (str=="202"){
+      mode=202;
+    }
+    if (str=="301"){
+      mode=301;
+    }
+    if (str=="302"){
+      mode=302;
+    }
+    if (str=="401"){
+      mode=401;
+    }
+    if (str=="402"){
+      mode=402;
+    }
+    if (str=="999"){
+      mode=999;
+    }
+
+    if (str=="M1_LEFT"){
+      mode=101;
+    }
+    if (str=="M1_RIGHT"){
+      mode=102;
+    }
+
+    if (str=="M2_LEFT"){
+      mode=201;
+    }
+    if (str=="M2_RIGHT"){
+      mode=202;
+    }
+    if (str=="M3_LEFT"){
+      mode=301;
+    }
+    if (str=="M3_RIGHT"){
+      mode=302;
+    }
+if (str=="M3_LOWER"){
+      mode=301;
+    }
+    if (str=="M3_RAISE"){
+      mode=302;
+    }
+
+    
+    if (str=="M4_TURN_LEFT"){
+      mode=402;
+    }
+    if (str=="M4_TURN_RIGHT"){
+      mode=401;
+    }
+    
+
+  
+}
+
+
+
 void loop() {
- // show();
+ // debugModePosition();
   int toPos=0;
   //int m1Temp=m1Pos;
   // 另案開發,此處空白
@@ -306,7 +490,7 @@ void loop() {
     servoRun(4, toPos);
   }
 
-
+  //debugModePosition(); 
 
   if (mode==999){
     initPos();
@@ -315,51 +499,31 @@ void loop() {
 
   //===========
   if (Serial.available()>0){
-    String str=Serial.readString();
+    str=Serial.readString();
     Serial.print("Serial input is =>");
     Serial.print(str);
     Serial.println("<<");
-    show(); 
     str.trim();
-    if (str=="0"){
-      mode=0;
-    }
-
-    if (str=="101"){
-      mode=101;
-    }
-    if (str=="102"){
-      mode=102;
-    }
-
-    if (str=="201"){
-      mode=201;
-    }
-    if (str=="202"){
-      mode=202;
-    }
-    if (str=="301"){
-      mode=301;
-    }
-    if (str=="302"){
-      mode=302;
-    }
-    if (str=="401"){
-      mode=401;
-    }
-    if (str=="402"){
-      mode=402;
-    }
-
-
-
-    
-    
-    if (str=="999"){
-      mode=999;
-    }
 
    
+
+    
+    
+    setMode();
+    Serial.print("--- after setMode by Serial ---");
+    
+    debugModePosition(); 
+    
+  }
+  if (BT.available()>0){
+    str=BT.readString();
+    Serial.print("BT =>");
+    Serial.print(str);
+    Serial.println("<<");
+    str.trim();
+    setMode();
+    Serial.print("--- after setMode by BT ---");
+    debugModePosition(); 
      
   }
 
